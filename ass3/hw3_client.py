@@ -17,7 +17,7 @@ def send_where_message(sensor_id):
     response = send_message_to_control(message)
 
     # print THERE message
-    print(response)
+    print(response.decode())
 
     return response
 
@@ -41,19 +41,63 @@ def send_update_position_message(sensor_id, x_position, y_position):
     return reachable
 
 
-def send_data_message(destination_id, next_id, message):
+def send_data_message(msg):
     # Format the DATA message for the control server
-    data_message = f"DATAMESSAGE {destination_id} {next_id} {message}\n"
-    response = send_message_to_control(data_message)
+    response = send_message_to_control(msg)
     return response
 
-def send_initial_data_message(destination_id, message):
-    # Format the DATA message for the control server
-    data_message = f"DATAMESSAGE {destination_id} {next_id} {message}\n"
-    response = send_message_to_control(data_message)
-    return response
+def find_next_loc(dest, reachable, hop_list):
+    # get position of destination
+    dest_pos = send_where_message(dest).split()
+    # dictionary to find distances and sort
+    next_ops = {}
+    for s in reachable:
+        # get dest for reachables
+        loc = send_where_message(s)
+        # get distance from dest
+    # sort dict
+    next_ops = sorted(next_ops.items(), key=lambda x:x[1])
+    next_ops = dict(next_ops)
+    
+    # check hop_list
+    for s in next_ops:
+        found = False
+        for h in hop_list:
+            if s == h:
+                found = True
+        if not found:
+            return s
+    # impossible to send
+    return -1
 
-
+def data_message_handling(res, x, y):
+    org_sns = res[1]
+    dest = res[3]
+    sns = res[2]
+    # iterate hop data
+    hop_num = res[4] + 1
+    hop_list = res[5]
+    hop_list.append(sns)
+    # get reachable list for sensor
+    reachable = send_update_position_message(sensor_id, x, y)
+    next_sns = ""
+    # search for dest
+    for s in reachable:
+        if s == dest:
+            next = dest
+    if next == dest:
+        # build data message
+        data_msg = "DATAMESSAGE " + org_sns + " " + next_sns + " " + dest + " " + hop_num + " " + hop_list
+        send_data_message(data_msg)
+    else:
+        next_sns = find_next_loc(dest, reachable, hop_list)
+        if next_sns == -1:
+            print(sns + ": Message from " + org_sns + " to " + dest + " could not be delivered")
+            return -1
+        else: # possible to send message
+            data_msg = "DATAMESSAGE " + org_sns + " " + next_sns + " " + dest + " " + hop_num + " " + hop_list
+            send_data_message(data_msg)
+        
 if __name__ == "__main__":
     if len(sys.argv) != 7:
         print(
@@ -121,11 +165,24 @@ if __name__ == "__main__":
                     if len(msg) != 2:
                         print("Invalid SENDDATA command arguments\n")
                     else: # valid command
-                        # print client message
-                        print(sensor_id + ": Sent a new message bound for " + msg[1])
                         # update position message
                         response = send_update_position_message(sensor_id, x_position, y_position)
-                        # send data message to control
+                        next_sns = ""
+                        # check for directy
+                        for s in response:
+                            if s == msg[1]:
+                                next_sns = s
+                        if next_sns == s:
+                            print(sensor_id + ": Sent a new message bound for " + msg[1])
+                            # build data message
+                            data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] 
+                            send_data_message(data_msg)
+                        else:
+                            # find where to send msg
+                            next_sns = find_next_loc(msg[1], response, [])
+                            # send data message to control
+                            data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] + " 1 ['" + sensor_id + "']"
+                            send_data_message(data_msg)
             # WHERE
                 elif(msg[0] == "WHERE"):
                     # invalid command structure
@@ -145,6 +202,12 @@ if __name__ == "__main__":
                         print("Invalid DATAMESSAGE received exiting...")
                         s.close()
                         exit(-1)
+                    else: 
+                        # received message destination
+                        if response[3] == sensor_id:
+                            print(sensor_id + ": Message from " + response[1] + " to " + sensor_id + " successfully received\n")
+                        else: # pass on message to next id
+                            data_message_handling(response, x_position, y_position, response[5])
                 else: # received invalid message
                     print("Invalid message received from control: exiting...\n")
                     s.close()
