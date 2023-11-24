@@ -121,7 +121,7 @@ if __name__ == "__main__":
     # connect client to control
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind((control_address, control_port))                # This server to a port
+    s.connect((control_address, control_port))                # This server to a port
 
     # test
     #response = send_where_message(sensor_id)
