@@ -1,6 +1,7 @@
 import socket
 import sys
 import math
+import select
 
 def send_message_to_control(message, control_socket):
     #control_address = (sys.argv[1], int(sys.argv[2]))  # Control server address and port
@@ -8,6 +9,7 @@ def send_message_to_control(message, control_socket):
     #    control_socket.connect(control_address)
     control_socket.sendall(message.encode())
     response = control_socket.recv(1024)  # buffer size?
+    #print(response.decode())
     return response.decode()
 
 
@@ -37,7 +39,7 @@ def send_update_position_message(sensor_id, x_position, y_position, s):
                 # add to reachable list
                 reachable.append(sns)
         # print string
-        space = " "
+        space = ", "
         res_str = res_str + space.join(reachable)
         print(res_str + "\n")
         return reachable
@@ -132,20 +134,20 @@ if __name__ == "__main__":
     #print("Response from control server:", response)
     # initial connection message
     response = send_update_position_message(sensor_id, x_position, y_position, s)
-    print("Response from control server:", response)
+    #print("Response from control server:", response)
 
     # Additional sensor logic...()
 
-    # Set up select
-    msg_sources = [s, sys.stdin]
-
     while 1:
+        # Set up select
+        msg_sources = [s, sys.stdin]
         # start select
-        input_detect = [msg_sources, [], []]
+        input_detect = select.select(msg_sources, [], [])
 
         for source in input_detect:
-            # Check for message input
-            if source == sys.stdin:
+
+            if source[0] == sys.stdin:
+                print("HELLLLOOOOO\n")
             # Check for control message
                 msg = sys.stdin.readline()
                 msg = msg.split()
@@ -200,6 +202,7 @@ if __name__ == "__main__":
                 else:
                     print("Invalid Client command input\n")
             else: # accept control message
+                #print(response)
                 response = s.recv(1024).decode()
                 response = response.split()
                 # received data message
