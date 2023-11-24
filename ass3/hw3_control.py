@@ -52,17 +52,7 @@ def run():
     my_hostname = socket.gethostname() # Gets my host name
     my_address = socket.gethostbyname(my_hostname) # Gets my IP address from my hostname
 
-    #''' Use the following code to convert a hostname to an IP and start a channel
-	#Note that every stub needs a channel attached to it
-	#When you are done with a channel you should call .close() on the channel.
-	#Submitty may kill your program if you have too many file descriptors open
-	#at the same time. '''
-	
-	#remote_addr = socket.gethostbyname(remote_addr_string)
-	#remote_port = int(remote_port_string)
-	#channel = grpc.insecure_channel(remote_addr + ':' + str(remote_port))
 
-    # create socket
     control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     control_socket.bind(('localhost', local_id)) # bind socket to port
     control_socket.listen(5) # listen for clients
@@ -74,18 +64,20 @@ def run():
     while True:
         readable, _, _ = select.select(inputs, [], [])
         for sock in readable:
-            if sock == control_socket:
-                # Accept incoming connections
-                client_socket, client_address = control_socket.accept()
-                print("Connected to:", client_address)
-
-                # Test connection
-                message = ('Connected - walshm7\n')
-                client_socket.send(message.encode())
-
-                # Close the client socket
-                client_socket.close()
-            elif sock == sys.stdin:
+            client_socket, client_address = control_socket.accept()
+            print("Connected to:", client_address)
+            # if sock == control_socket:
+            #     # Accept incoming connections
+            #     client_socket, client_address = control_socket.accept()
+            #     print("Connected to:", client_address)
+            #
+            #     # Test connection
+            #     message = ('Connected - walshm7\n')
+            #     client_socket.send(message.encode())
+            #
+            #     # Close the client socket
+            #     # client_socket.close()
+            if sock == sys.stdin:
                 # Read from standard input
                 try:
                     command = input().strip()  # Read from stdin
@@ -97,13 +89,41 @@ def run():
                         control_socket.close()
                         sys.exit(0)
                     elif command.startswith("WHERE"): # confused on where this comes from
-                        # Handle WHERE command
-                        # Extract NodeID and process accordingly
-                        pass  # Implement handling WHERE command
+                        try:
+                            parts = command.split()
+                            node_id = parts[1]
+                            if node_id in base:
+                                x_pos = base[node_id][0]
+                                y_pos = base[node_id][1]
+
+                                there_message = f"THERE {node_id} {x_pos} {y_pos}\n"
+
+                                client_socket.send(there_message.encode())
+                                print(there_message)
+                            else:
+                                print("Node ID not found.")
+                        except Exception as e:
+                            print("Error handling WHERE command:", e)
                     elif command.startswith("UPDATEPOSITION"): # confused on where this comes from
-                        # Handle UPDATEPOSITION command
-                        # Extract necessary information and respond
-                        pass  # Implement handling UPDATEPOSITION command
+                        try:
+                            parts = command.split()
+                            sensor_id = parts[1]
+                            x_pos = parts[2]
+                            y_pos = parts[3]
+
+                            reachable_list = []
+                            for node_id, pos_info in base.items():
+                                reachable_list.append(f"{node_id} {pos_info[0]} {pos_info[1]}")
+
+                            # Construct REACHABLE message
+                            num_reachable = len(reachable_list)
+                            reachable_message = f"REACHABLE {num_reachable} {' '.join(reachable_list)}\n"
+
+                            print(reachable_message)
+                            client_socket.send(reachable_message.encode())
+
+                        except Exception as e:
+                            print("Error handling UPDATEPOSITION command:", e)
                     else:
                         print("Invalid command. Please enter a valid command.")
                 except KeyboardInterrupt:
