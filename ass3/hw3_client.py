@@ -19,14 +19,14 @@ def send_where_message(sensor_id, s):
     response = send_message_to_control(message, s)
 
     # print THERE message
-    print(response.decode())
+    print(response)
 
     return response
 
 
-def send_update_position_message(sensor_id, x_position, y_position, s):
+def send_update_position_message(sensor_id, x_position, y_position, s, sns_range):
     # Format the UPDATEPOSITION message for the control server
-    message = f"UPDATEPOSITION {sensor_id} {x_position} {y_position}\n"
+    message = f"UPDATEPOSITION {sensor_id} {sns_range} {x_position} {y_position}\n"
     response = send_message_to_control(message, s)
     
     # print REACHABLE message
@@ -78,7 +78,7 @@ def find_next_loc(dest, reachable, hop_list, s):
     # impossible to send
     return -1
 
-def data_message_handling(res, x, y, s):
+def data_message_handling(res, x, y, s, sns_range):
     org_sns = res[1]
     dest = res[3]
     sns = res[2]
@@ -87,7 +87,7 @@ def data_message_handling(res, x, y, s):
     hop_list = res[5]
     hop_list.append(sns)
     # get reachable list for sensor
-    reachable = send_update_position_message(sensor_id, x, y, s)
+    reachable = send_update_position_message(sensor_id, x, y, s, sns_range)
     next_sns = ""
     # search for dest
     for s in reachable:
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     #response = send_where_message(sensor_id)
     #print("Response from control server:", response)
     # initial connection message
-    response = send_update_position_message(sensor_id, x_position, y_position, s)
+    response = send_update_position_message(sensor_id, x_position, y_position, s, sensor_range)
     #print("Response from control server:", response)
 
     # Additional sensor logic...()
@@ -147,7 +147,6 @@ if __name__ == "__main__":
         for source in input_detect:
 
             if source[0] == sys.stdin:
-                print("HELLLLOOOOO\n")
             # Check for control message
                 msg = sys.stdin.readline()
                 msg = msg.split()
@@ -155,6 +154,7 @@ if __name__ == "__main__":
             # Handle messages
             # QUIT
                 if(msg[0] == "QUIT"):
+                    # inform client of disconnect
                     s.close()
                     exit()
             # MOVE
@@ -167,14 +167,14 @@ if __name__ == "__main__":
                         x_position = msg[1]
                         y_position = msg[2]
                         # notify control
-                        reachable_list = send_update_position_message(sensor_id, x_position, y_position, s)
+                        reachable_list = send_update_position_message(sensor_id, x_position, y_position, s, sensor_range)
             # SENDDATA
                 elif(msg[0] == "SENDDATA"):
                     if len(msg) != 2:
                         print("Invalid SENDDATA command arguments\n")
                     else: # valid command
                         # update position message
-                        response = send_update_position_message(sensor_id, x_position, y_position, s)
+                        response = send_update_position_message(sensor_id, x_position, y_position, s, sensor_range)
                         next_sns = ""
                         # check for directy
                         for s in response:
