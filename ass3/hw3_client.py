@@ -28,6 +28,7 @@ def send_update_position_message(sensor_id, x_position, y_position, s, sns_range
     # Format the UPDATEPOSITION message for the control server
     message = f"UPDATEPOSITION {sensor_id} {sns_range} {x_position} {y_position}\n"
     response = send_message_to_control(message, s)
+    print(response)
     
     # print REACHABLE message
     res_str = sensor_id + ": After reading REACHABLE message, I can see: "
@@ -180,7 +181,7 @@ if __name__ == "__main__":
                     s.close()
                     exit()
             # MOVE
-                elif(msg[1] == "MOVE"):
+                elif(msg[0] == "MOVE"):
                     # check for valid inputs
                     if len(msg) != 3:
                         print("Invalid MOVE command\n")

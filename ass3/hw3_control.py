@@ -12,6 +12,22 @@ import grpc
 # import csci4220_hw3_pb2
 # import csci4220_hw3_pb2_grpc
 
+
+def lists_reachable(x, y, range, dic, id):
+
+    try:
+        reachable = []
+        for b, val in dic.items():
+            dist = math.dist([int(x), int(y)], [int(val[0]), int(val[1])])
+            if dist <= int(range) and b != id:
+                reachable.append(b)
+            # print(reachable,b, id)
+
+        return reachable
+    except Exception as e:
+        print("Error in lists_reachable:", e)
+
+
 def run():
     if len(sys.argv) != 3:
         print("Error, correct usage is {} [control port] [base station file]".format(sys.argv[0]))
@@ -104,7 +120,8 @@ def run():
                                 print("Node ID not found.")
                         except Exception as e:
                             print("Error handling WHERE command:", e)
-                    elif command.startswith("UPDATEPOSITION"): # confused on where this comes from
+                    elif command.startswith("UPDATEPOSITION"):
+                        print("here")
                         try:
                             parts = command.split()
                             sensor_id = parts[1]
@@ -181,6 +198,29 @@ def run():
                             print("Node ID not found.")
                     except Exception as e:
                         print("Error handling WHERE command:", e)
+                elif command.startswith("UPDATEPOSITION"):
+                    try:
+                        parts = command.split()
+                        range = parts[2]
+                        sensor_id = parts[1]
+                        x_pos = parts[3]
+                        y_pos = parts[4]
+
+                        reachable = lists_reachable(x_pos,y_pos, range, base, sensor_id)
+
+                        # for node_id, pos_info in base.items():
+                        #     reachable_list.append(f"{node_id} {pos_info[0]} {pos_info[1]}")
+
+                        # Construct REACHABLE message
+                        num_reachable = len(reachable)
+
+                        reachable_message = f"REACHABLE {num_reachable} {' '.join(reachable)}\n"
+
+                        print(reachable_message)
+                        client_socket.send(reachable_message.encode())
+                    except Exception as e:
+                        print("Error handling UPDATEPOSITION command:", e)
+
 
 
 
