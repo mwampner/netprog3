@@ -2,19 +2,19 @@ import socket
 import sys
 import math
 
-def send_message_to_control(message):
-    control_address = (sys.argv[1], int(sys.argv[2]))  # Control server address and port
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as control_socket:
-        control_socket.connect(control_address)
-        control_socket.sendall(message.encode())
-        response = control_socket.recv(1024)  # buffer size?
-        return response.decode()
+def send_message_to_control(message, control_socket):
+    #control_address = (sys.argv[1], int(sys.argv[2]))  # Control server address and port
+    #with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as control_socket:
+    #    control_socket.connect(control_address)
+    control_socket.sendall(message.encode())
+    response = control_socket.recv(1024)  # buffer size?
+    return response.decode()
 
 
-def send_where_message(sensor_id):
+def send_where_message(sensor_id, s):
     # Format the WHERE message for the control server
     message = f"WHERE {sensor_id}\n"
-    response = send_message_to_control(message)
+    response = send_message_to_control(message, s)
 
     # print THERE message
     print(response.decode())
@@ -22,33 +22,37 @@ def send_where_message(sensor_id):
     return response
 
 
-def send_update_position_message(sensor_id, x_position, y_position):
+def send_update_position_message(sensor_id, x_position, y_position, s):
     # Format the UPDATEPOSITION message for the control server
     message = f"UPDATEPOSITION {sensor_id} {x_position} {y_position}\n"
-    response = send_message_to_control(message)
+    response = send_message_to_control(message, s)
     
     # print REACHABLE message
     res_str = sensor_id + ": After reading REACHABLE message, I can see: "
     response = response.split()
     reachable = []
-    for sns in response:
-        if sns != "REACHABLE" and not sns.isnumeric():
-            # add to reachable list
-            reachable.append(sns)
-    # print string
-    res_str = res_str + reachable
-    print(res_str + "\n")
-    return reachable
+    if response[0] == "REACHABLE":
+        for sns in response:
+            if sns != "REACHABLE" and not sns.isnumeric():
+                # add to reachable list
+                reachable.append(sns)
+        # print string
+        space = " "
+        res_str = res_str + space.join(reachable)
+        print(res_str + "\n")
+        return reachable
+    else:
+        return
 
 
-def send_data_message(msg):
+def send_data_message(msg, s):
     # Format the DATA message for the control server
-    response = send_message_to_control(msg)
+    response = send_message_to_control(msg, s)
     return response
 
-def find_next_loc(dest, reachable, hop_list):
+def find_next_loc(dest, reachable, hop_list, s):
     # get position of destination
-    dest_pos = send_where_message(dest).split()
+    dest_pos = send_where_message(dest, s).split()
     # dictionary to find distances and sort
     next_ops = {}
     for s in reachable:
@@ -72,7 +76,7 @@ def find_next_loc(dest, reachable, hop_list):
     # impossible to send
     return -1
 
-def data_message_handling(res, x, y):
+def data_message_handling(res, x, y, s):
     org_sns = res[1]
     dest = res[3]
     sns = res[2]
@@ -81,7 +85,7 @@ def data_message_handling(res, x, y):
     hop_list = res[5]
     hop_list.append(sns)
     # get reachable list for sensor
-    reachable = send_update_position_message(sensor_id, x, y)
+    reachable = send_update_position_message(sensor_id, x, y, s)
     next_sns = ""
     # search for dest
     for s in reachable:
@@ -90,7 +94,7 @@ def data_message_handling(res, x, y):
     if next == dest:
         # build data message
         data_msg = "DATAMESSAGE " + org_sns + " " + next_sns + " " + dest + " " + hop_num + " " + hop_list
-        send_data_message(data_msg)
+        send_data_message(data_msg, s)
     else:
         next_sns = find_next_loc(dest, reachable, hop_list)
         if next_sns == -1:
@@ -98,7 +102,7 @@ def data_message_handling(res, x, y):
             return -1
         else: # possible to send message
             data_msg = "DATAMESSAGE " + org_sns + " " + next_sns + " " + dest + " " + hop_num + " " + hop_list
-            send_data_message(data_msg)
+            send_data_message(data_msg, s)
         
 if __name__ == "__main__":
     if len(sys.argv) != 7:
@@ -127,7 +131,7 @@ if __name__ == "__main__":
     #response = send_where_message(sensor_id)
     #print("Response from control server:", response)
     # initial connection message
-    response = send_update_position_message(sensor_id, x_position, y_position)
+    response = send_update_position_message(sensor_id, x_position, y_position, s)
     print("Response from control server:", response)
 
     # Additional sensor logic...()
@@ -161,14 +165,14 @@ if __name__ == "__main__":
                         x_position = msg[1]
                         y_position = msg[2]
                         # notify control
-                        reachable_list = send_update_position_message(sensor_id, x_position, y_position)
+                        reachable_list = send_update_position_message(sensor_id, x_position, y_position, s)
             # SENDDATA
                 elif(msg[0] == "SENDDATA"):
                     if len(msg) != 2:
                         print("Invalid SENDDATA command arguments\n")
                     else: # valid command
                         # update position message
-                        response = send_update_position_message(sensor_id, x_position, y_position)
+                        response = send_update_position_message(sensor_id, x_position, y_position, s)
                         next_sns = ""
                         # check for directy
                         for s in response:
@@ -178,20 +182,20 @@ if __name__ == "__main__":
                             print(sensor_id + ": Sent a new message bound for " + msg[1])
                             # build data message
                             data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] 
-                            send_data_message(data_msg)
+                            send_data_message(data_msg, s)
                         else:
                             # find where to send msg
                             next_sns = find_next_loc(msg[1], response, [])
                             # send data message to control
                             data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] + " 1 ['" + sensor_id + "']"
-                            send_data_message(data_msg)
+                            send_data_message(data_msg, s)
             # WHERE
                 elif(msg[0] == "WHERE"):
                     # invalid command structure
                     if len(msg) != 2:
                         print("Invalid WHERE commad arguments\n")
                     else: # valid command
-                        res = send_where_message(msg[1])
+                        res = send_where_message(msg[1], s)
             # INVALID COMMAND
                 else:
                     print("Invalid Client command input\n")
@@ -209,7 +213,7 @@ if __name__ == "__main__":
                         if response[3] == sensor_id:
                             print(sensor_id + ": Message from " + response[1] + " to " + sensor_id + " successfully received\n")
                         else: # pass on message to next id
-                            data_message_handling(response, x_position, y_position, response[5])
+                            data_message_handling(response, x_position, y_position, response[5], s)
                 else: # received invalid message
                     print("Invalid message received from control: exiting...\n")
                     s.close()
