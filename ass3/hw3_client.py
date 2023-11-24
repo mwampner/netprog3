@@ -1,6 +1,6 @@
 import socket
 import sys
-
+import math
 
 def send_message_to_control(message):
     control_address = (sys.argv[1], int(sys.argv[2]))  # Control server address and port
@@ -55,6 +55,8 @@ def find_next_loc(dest, reachable, hop_list):
         # get dest for reachables
         loc = send_where_message(s)
         # get distance from dest
+        dist = math.dist([loc[1], loc[2]], [dest_pos[1], dest_pos[2]])
+        next_ops[s] = dist
     # sort dict
     next_ops = sorted(next_ops.items(), key=lambda x:x[1])
     next_ops = dict(next_ops)
