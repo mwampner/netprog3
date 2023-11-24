@@ -146,8 +146,30 @@ if __name__ == "__main__":
 
         for source in input_detect:
 
-            if source[0] == sys.stdin:
-            # Check for control message
+            if source == s: # accept control message
+                #print(response)
+                response = s.recv(1024).decode()
+                response = response.split()
+                # received data message
+                if response[0] == "DATAMESSAGE":
+                    if(len(response) != 6):
+                        print("Invalid DATAMESSAGE received exiting...")
+                        s.close()
+                        exit(-1)
+                    else: 
+                        # received message destination
+                        if response[3] == sensor_id:
+                            print(sensor_id + ": Message from " + response[1] + " to " + sensor_id + " successfully received\n")
+                        else: # pass on message to next id
+                            data_message_handling(response, x_position, y_position, response[5], s)
+                else: # received invalid message
+                    print("Invalid message received from control: exiting...\n")
+                    s.close()
+                    exit(-1)
+            
+            else: # accept input message
+                
+                # Check for input message
                 msg = sys.stdin.readline()
                 msg = msg.split()
             
@@ -201,24 +223,4 @@ if __name__ == "__main__":
             # INVALID COMMAND
                 else:
                     print("Invalid Client command input\n")
-            else: # accept control message
-                #print(response)
-                response = s.recv(1024).decode()
-                response = response.split()
-                # received data message
-                if response[0] == "DATAMESSAGE":
-                    if(len(response) != 6):
-                        print("Invalid DATAMESSAGE received exiting...")
-                        s.close()
-                        exit(-1)
-                    else: 
-                        # received message destination
-                        if response[3] == sensor_id:
-                            print(sensor_id + ": Message from " + response[1] + " to " + sensor_id + " successfully received\n")
-                        else: # pass on message to next id
-                            data_message_handling(response, x_position, y_position, response[5], s)
-                else: # received invalid message
-                    print("Invalid message received from control: exiting...\n")
-                    s.close()
-                    exit(-1)
                     

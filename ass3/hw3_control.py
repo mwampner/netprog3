@@ -147,7 +147,7 @@ def run():
                     reachable_list = []
                     
                     for node_id, pos_info in base.items():
-                        if(math.dist([x_pos, y_pos], [int(pos_info[0]), int(pos_info[1])]) <= sns_range):
+                        if(math.dist([x_pos, y_pos], [int(pos_info[0]), int(pos_info[1])]) <= sns_range and node_id != sensor_id):
                             reachable_list.append(node_id)
                     print("TEST")
                     base[sensor_id].append(len(reachable_list))
