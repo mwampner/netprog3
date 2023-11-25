@@ -40,6 +40,7 @@ def send_update_position_message(sensor_id, x_position, y_position, s, sns_range
                 # add to reachable list
                 reachable.append(sns)
         # print string
+        reachable.sort()
         if len(reachable) != 0:
             res_str = res_str + "'"
         space = "', '"
@@ -102,9 +103,11 @@ def data_message_handling(res,hop, x, y, s, sns_range):
     if next_sns == dest:
         # build data message
         hop_str = ""
-        for i in hop_list:
-            hop_str = hop_str + ' ' + i
-        data_msg = "DATAMESSAGE " + org_sns + " " + next_sns + " " + dest +  " [ " + hop_str + " ]"
+        #for i in hop_list:
+        #    hop_str = hop_str + ' ' + i
+        space = ", "
+        hop_str = hop_str + space.join(hop_list)
+        data_msg = "DATAMESSAGE " + org_sns + " " + next_sns + " " + dest +  " " + str(len(hop_list)) + " [" + hop_str + "]"
         send_data_message(data_msg, s)
     else:
         next_sns = find_next_loc(dest, reachable, hop_list, s)
@@ -113,10 +116,12 @@ def data_message_handling(res,hop, x, y, s, sns_range):
             return -1
         else: # possible to send message
             hop_str = ""
-            for i in hop_list:
-                hop_str = hop_str + ' ' + i
+            #for i in hop_list:
+            #    hop_str = hop_str + ' ' + i
+            space = ", "
+            hop_str = hop_str + space.join(hop_list)
             print(sns + ": Message from " + org_sns + " to "+dest+" being forwarded through "+ sns)
-            data_msg = "DATAMESSAGE " + org_sns + " " + next_sns + " " + dest + " " + " [ " + hop_str + " ]"
+            data_msg = "DATAMESSAGE " + org_sns + " " + next_sns + " " + dest +  " " + str(len(hop_list)) + " [" + hop_str + "]"
             send_data_message(data_msg, s)
         
 if __name__ == "__main__":

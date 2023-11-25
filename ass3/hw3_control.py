@@ -77,6 +77,8 @@ def run():
         print("Error, correct usage is {} [control port] [base station file]".format(sys.argv[0]))
         sys.exit(-1)
         
+    for s in sys.argv:
+        print(s)
     # Read base station file
     station_file = open(sys.argv[2], "r")
     if station_file == FileNotFoundError:
@@ -248,7 +250,7 @@ def run():
                         print("Error handling UPDATEPOSITION command:", e)
                 elif command.startswith("DATAMESSAGE"):
                     try:
-                        # print(command)
+                        print(command)
                         hop = command[command.find('[') + 1: command.find(']')].split()
                         parts = command.split()
                         print(parts)
