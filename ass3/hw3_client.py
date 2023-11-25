@@ -31,7 +31,7 @@ def send_update_position_message(sensor_id, x_position, y_position, s, sns_range
     # print(response)
     
     # print REACHABLE message
-    res_str = sensor_id + ": After reading REACHABLE message, I can see: "
+    res_str = sensor_id + ": After reading REACHABLE message, I can see: ['"
     response = response.split()
     reachable = []
     if response[0] == "REACHABLE":
@@ -40,9 +40,9 @@ def send_update_position_message(sensor_id, x_position, y_position, s, sns_range
                 # add to reachable list
                 reachable.append(sns)
         # print string
-        space = ", "
+        space = "', '"
         res_str = res_str + space.join(reachable)
-        print(res_str + "\n")
+        print(res_str + "]\n")
         return reachable
     else:
         return
