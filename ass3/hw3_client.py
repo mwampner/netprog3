@@ -181,6 +181,7 @@ if __name__ == "__main__":
                 # QUIT
                     if(msg[0] == "QUIT"):
                         # inform client of disconnect
+                        s.shutdown(socket.SHUT_RDWR)
                         s.close()
                         exit()
                 # MOVE

@@ -123,6 +123,7 @@ def run():
 
     while True:
         readable, _, _ = select.select(inputs, [], [])
+
         for sock in readable:
             
             # if sock == control_socket:
@@ -287,6 +288,12 @@ def run():
 
                     except Exception as e:
                         print("Error handling DATAMESSAGE command:", e)
+                elif command == "": # Client disconnect
+                    for c in clients:
+                        if clients[c] == client_socket:
+                            print("DISCONNECT " + c)
+                            base.pop(c)
+                            inputs.remove(client_socket)
 
 
 
