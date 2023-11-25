@@ -210,10 +210,10 @@ def run():
                 elif command.startswith("UPDATEPOSITION"):
                     try:
                         parts = command.split()
-                        range = parts[2]
+                        range = int(parts[2])
                         sensor_id = parts[1]
-                        x_pos = parts[3]
-                        y_pos = parts[4]
+                        x_pos = int(parts[3])
+                        y_pos = int(parts[4])
 
                         reachable = lists_reachable(x_pos,y_pos, range, base, sensor_id)
 
@@ -246,7 +246,6 @@ def run():
                         # send to sensor
 
                         while 1:
-
                             if next_sns not in base_stations:
                                 next_sock = clients[next_sns]
                                 hop_str = ""
@@ -262,17 +261,21 @@ def run():
                                 if next_sns == dest:
                                     print(next_sns+": Message from "+sensor_id+" to "+dest+" successfully received")
                                     break
+                                elif dest in base[next_sns][3]: # destination is reachable
+                                    hop.append(next_sns)
+                                    print(next_sns+": Message from "+ sensor_id+" to "+dest+" being forwarded through "+next_sns)
+                                    next_sns = dest
                                 elif check_lists(base[next_sns][3], hop):
                                     # print("no")
                                     print(next_sns+": Message from "+sensor_id+" to "+dest+" could not be delivered")
-                                    break
-
+                                    break 
                                 else:
                                     nxt = closest(base,next_sns, dest, hop)
                                     if nxt in base_stations:
                                         print(next_sns+": Message from "+ sensor_id+" to "+dest+" being forwarded through "+next_sns)
                                         hop.append(next_sns)
                                         next_sns = nxt
+                                        break
 
 
                                     else:
@@ -282,9 +285,8 @@ def run():
                                             hop_str = hop_str + ' ' + i
                                         data_msg = "DATAMESSAGE " + sensor_id + " " + nxt + " " + dest+ " [ " + hop_str + "]"
                                         next_sock.send(data_msg.encode())
-                                        break
+                                        break    
                         client_socket.send("message sent".encode())
-
 
                     except Exception as e:
                         print("Error handling DATAMESSAGE command:", e)
@@ -294,13 +296,6 @@ def run():
                             print("DISCONNECT " + c)
                             base.pop(c)
                             inputs.remove(client_socket)
-
-
-
-
-
-
-
 
 if __name__ == '__main__':
 	run()

@@ -28,10 +28,9 @@ def send_update_position_message(sensor_id, x_position, y_position, s, sns_range
     # Format the UPDATEPOSITION message for the control server
     message = f"UPDATEPOSITION {sensor_id} {sns_range} {x_position} {y_position}\n"
     response = send_message_to_control(message, s)
-    print(response)
     
     # print REACHABLE message
-    res_str = sensor_id + ": After reading REACHABLE message, I can see: "
+    res_str = sensor_id + ": After reading REACHABLE message, I can see: ['"
     response = response.split()
     reachable = []
     if response[0] == "REACHABLE":
@@ -40,9 +39,9 @@ def send_update_position_message(sensor_id, x_position, y_position, s, sns_range
                 # add to reachable list
                 reachable.append(sns)
         # print string
-        space = ", "
+        space = "', '"
         res_str = res_str + space.join(reachable)
-        print(res_str + "\n")
+        print(res_str + "']\n")
         return reachable
     else:
         return
@@ -202,13 +201,14 @@ if __name__ == "__main__":
                         else: # valid command
                             # update position message
                             response = send_update_position_message(sensor_id, x_position, y_position, s, sensor_range)
+                            print(sensor_id + ": Sent a new message bound for " + msg[1])
                             next_sns = ""
                             # check for directy
                             for s1 in response:
                                 if s1 == msg[1]:
                                     next_sns = s1
                             if next_sns == s:
-                                print(sensor_id + ": Sent a new message bound for " + msg[1])
+                                
                                 # build data message
                                 data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1]
                                 send_data_message(data_msg, s)
