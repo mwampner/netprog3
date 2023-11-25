@@ -51,19 +51,22 @@ def send_update_position_message(sensor_id, x_position, y_position, s, sns_range
 def send_data_message(msg, s):
     # Format the DATA message for the control server
     response = send_message_to_control(msg, s)
+    print(response)
     return response
 
 def find_next_loc(dest, reachable, hop_list, s):
     # get position of destination
     dest_pos = send_where_message(dest, s).split()
+    # print(dest_pos)
     # dictionary to find distances and sort
     next_ops = {}
-    for s in reachable:
+    for s1 in reachable:
         # get dest for reachables
-        loc = send_where_message(s)
+        loc = send_where_message(s1, s).split()
+        print(loc, dest_pos)
         # get distance from dest
-        dist = math.dist([loc[1], loc[2]], [dest_pos[1], dest_pos[2]])
-        next_ops[s] = dist
+        dist = math.dist([int(loc[2]), int(loc[3])], [int(dest_pos[2]), int(dest_pos[3])])
+        next_ops[s1] = dist
     # sort dict
     next_ops = sorted(next_ops.items(), key=lambda x:x[1])
     next_ops = dict(next_ops)
@@ -200,9 +203,9 @@ if __name__ == "__main__":
                         response = send_update_position_message(sensor_id, x_position, y_position, s, sensor_range)
                         next_sns = ""
                         # check for directy
-                        for s in response:
-                            if s == msg[1]:
-                                next_sns = s
+                        for s1 in response:
+                            if s1 == msg[1]:
+                                next_sns = s1
                         if next_sns == s:
                             print(sensor_id + ": Sent a new message bound for " + msg[1])
                             # build data message
@@ -210,7 +213,7 @@ if __name__ == "__main__":
                             send_data_message(data_msg, s)
                         else:
                             # find where to send msg
-                            next_sns = find_next_loc(msg[1], response, [])
+                            next_sns = find_next_loc(msg[1], response, [], s)
                             # send data message to control
                             data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] + " 1 ['" + sensor_id + "']"
                             send_data_message(data_msg, s)
@@ -222,6 +225,7 @@ if __name__ == "__main__":
                     else: # valid command
                         res = send_where_message(msg[1], s)
             # INVALID COMMAND
+
                 else:
                     print("Invalid Client command input\n")
                     
