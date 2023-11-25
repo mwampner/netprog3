@@ -42,7 +42,7 @@ def send_update_position_message(sensor_id, x_position, y_position, s, sns_range
         # print string
         space = "', '"
         res_str = res_str + space.join(reachable)
-        print(res_str + "]\n")
+        print(res_str + "]")
         return reachable
     else:
         return
@@ -170,11 +170,11 @@ if __name__ == "__main__":
                         else:
                             # received message destination
                             if response[3] == sensor_id:
-                                print(sensor_id + ": Message from " + response[1] + " to " + sensor_id + " successfully received\n")
+                                print(sensor_id + ": Message from " + response[1] + " to " + sensor_id + " successfully received")
                             else: # pass on message to next id
                                 data_message_handling(response, hop,  x_position, y_position, s, sensor_range)
                     else: # received invalid message
-                        print("Invalid message received from control: exiting...\n")
+                        print("Invalid message received from control: exiting...")
                         s.close()
                         exit(-1)
 
@@ -195,7 +195,7 @@ if __name__ == "__main__":
                     elif(msg[0] == "MOVE"):
                         # check for valid inputs
                         if len(msg) != 3:
-                            print("Invalid MOVE command\n")
+                            print("Invalid MOVE command")
                         else: # valid command
                             # change position
                             x_position = msg[1]
@@ -205,17 +205,14 @@ if __name__ == "__main__":
                 # SENDDATA
                     elif(msg[0] == "SENDDATA"):
                         if len(msg) != 2:
-                            print("Invalid SENDDATA command arguments\n")
+                            print("Invalid SENDDATA command arguments")
                         else: # valid command
                             # update position message
                             response = send_update_position_message(sensor_id, x_position, y_position, s, sensor_range)
                             next_sns = ""
                             # check for directy
-                            for s1 in response:
-                                if s1 == msg[1]:
-                                    next_sns = s1
-                            if next_sns == s:
-                                print(sensor_id + ": Sent a new message bound for " + msg[1])
+                            if msg[1] in response:
+                                print(sensor_id + ": Sent a new message directly to " + msg[1] + ".")
                                 # build data message
                                 data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] + "[ ]"
                                 send_data_message(data_msg, s)
@@ -230,7 +227,7 @@ if __name__ == "__main__":
                     elif(msg[0] == "WHERE"):
                         # invalid command structure
                         if len(msg) != 2:
-                            print("Invalid WHERE commad arguments\n")
+                            print("Invalid WHERE commad arguments")
                         else: # valid command
                             res = send_where_message(msg[1], s)
                     # elif(msg[0] == "DATAMESSAGE"):

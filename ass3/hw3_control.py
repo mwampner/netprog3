@@ -123,10 +123,13 @@ def run():
     my_hostname = socket.gethostname() # Gets my host name
     my_address = socket.gethostbyname(my_hostname) # Gets my IP address from my hostname
 
-
-    control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    control_socket.bind(('localhost', local_id)) # bind socket to port
-    control_socket.listen(5) # listen for clients
+    try:
+        control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        control_socket.bind(('localhost', local_id)) # bind socket to port
+        control_socket.listen(5) # listen for clients
+        print("LISTENING!!!")
+    except Exception as e:
+        print("Error:", e)
 
     # listen
     # print("listnening for connections")
@@ -170,7 +173,10 @@ def run():
                 except Exception as e:
                     print("Error:", e)
             elif sock == control_socket: # check for new connection
-                client_socket, client_address = control_socket.accept()
+                try:
+                    client_socket, client_address = control_socket.accept()
+                except Exception as e:
+                    print("Error:", e)
                 inputs.append(client_socket)
                 print("Connected to:", client_address)
                 command = client_socket.recv(1024).decode()
