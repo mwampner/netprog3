@@ -251,6 +251,7 @@ def run():
                         # print(command)
                         hop = command[command.find('[') + 1: command.find(']')].split()
                         parts = command.split()
+                        print(parts)
                         #  "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] + " 1 ['" + sensor_id + "']"
                         sensor_id = parts[1]
                         next_sns = parts[2]
@@ -277,27 +278,28 @@ def run():
                                 # print(base[next_sns][3])
                                 # print(hop)
                                 if next_sns == dest:
-                                    print(next_sns+": Message from "+sensor_id+" to "+dest+" successfully received")
+                                    print(next_sns+": Message from "+sensor_id+" to "+dest+" successfully received.")
                                     break
                                 elif dest in base[next_sns][3]: # base stations can reach each other
                                     hop.append(next_sns)
-                                    print(next_sns+": Message from "+ sensor_id+" to "+dest+" being forwarded through "+next_sns)
+                                    print(next_sns+": Message from "+ sensor_id+" to "+dest+" being forwarded through "+next_sns+".")
                                     next_sns = dest
                                 elif check_lists(base[next_sns][3], hop):
                                     # print("no")
-                                    print(next_sns+": Message from "+sensor_id+" to "+dest+" could not be delivered")
+                                    print(next_sns+": Message from "+ sensor_id+" to "+dest+" being forwarded through "+next_sns + ".")
+                                    print(next_sns+": Message from "+sensor_id+" to "+dest+" could not be delivered.")
                                     break
                                 else:
                                     nxt = closest(base,next_sns, dest, hop, base_stations)
                                     # print(nxt, "nxt")
                                     if nxt in base_stations:
-                                        print(next_sns+": Message from "+ sensor_id+" to "+dest+" being forwarded through "+next_sns)
+                                        print(next_sns+": Message from "+ sensor_id+" to "+dest+" being forwarded through "+next_sns + ".")
                                         hop.append(next_sns)
                                         next_sns = nxt
 
 
                                     else:
-                                        print(next_sns + ": Message from " + sensor_id + " to " + dest + " being forwarded through " + next_sns)
+                                        print(next_sns + ": Message from " + sensor_id + " to " + dest + " being forwarded through " + next_sns+".")
                                         next_sock = clients[nxt]
                                         hop_str = ""
                                         space = "', '"

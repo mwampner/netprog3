@@ -31,7 +31,7 @@ def send_update_position_message(sensor_id, x_position, y_position, s, sns_range
     # print(response)
     
     # print REACHABLE message
-    res_str = sensor_id + ": After reading REACHABLE message, I can see: ['"
+    res_str = sensor_id + ": After reading REACHABLE message, I can see: ["
     response = response.split()
     reachable = []
     if response[0] == "REACHABLE":
@@ -40,6 +40,8 @@ def send_update_position_message(sensor_id, x_position, y_position, s, sns_range
                 # add to reachable list
                 reachable.append(sns)
         # print string
+        if len(reachable) != 0:
+            res_str = res_str + "'"
         space = "', '"
         res_str = res_str + space.join(reachable)
         print(res_str + "]")
@@ -214,15 +216,18 @@ if __name__ == "__main__":
                             if msg[1] in response:
                                 print(sensor_id + ": Sent a new message directly to " + msg[1] + ".")
                                 # build data message
-                                data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] + "[ ]"
+                                data_msg = "DATAMESSAGE " + sensor_id + " " + msg[1] + " " + msg[1] + " 1 [" + sensor_id + "]"
                                 send_data_message(data_msg, s)
                             else:
                                 # find where to send msg
-                                print(sensor_id + ": Sent a new message bound for " + msg[1])
                                 next_sns = find_next_loc(msg[1], response, [], s)
-                                # send data message to control
-                                data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] + " ['" + sensor_id + "']"
-                                send_data_message(data_msg, s)
+                                if next_sns.isnumeric() and next_sns < 0:
+                                    print(sensor_id + ": Message from " + sensor_id + " to " + msg[1] + " could not be delivered.")
+                                else:
+                                    print(sensor_id + ": Sent a new message bound for " + msg[1] + ".")
+                                    # send data message to control
+                                    data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] + " 1 [" + sensor_id + "]"
+                                    send_data_message(data_msg, s)
                 # WHERE
                     elif(msg[0] == "WHERE"):
                         # invalid command structure
