@@ -46,10 +46,20 @@ def closest(base, curr, dest, hops, base_stations):
                 dist = math.dist([int(x), int(y)], [int(val[0]), int(val[1])])
             except Exception as e:
                 print("Error in dist:", e)
-            if b not in hops:
+            if b not in hops and b in base_stations: # base_station
                 if dist < reachable[1]:
+                    #print(curr + " ---> " + b + " (" + str(dist) + ")")
                     reachable[0] = b
                     reachable[1] = dist
+            else: # clients
+                #print(curr + " ---> " + b + " (" + str(dist) + ")")
+                #print(hops)
+                #print(base[b][3])
+                if b not in hops and curr in base[b][3]:
+                    if dist < reachable[1]:
+                        reachable[0] = b
+                        reachable[1] = dist
+
     # reachable = sorted(reachable.items(), key=lambda x: x[1])
     #     # reachable = dict(reachable)
     return reachable[0]
@@ -179,8 +189,7 @@ def run():
                             reachable_list.append(node_id)
                     # print("TEST")
                     base[sensor_id].append(len(reachable_list))
-                    for n in reachable_list:
-                        base[sensor_id].append(n)
+                    base[sensor_id].append(reachable_list)
                     # Construct REACHABLE message
                     num_reachable = len(reachable_list)
                     reachable_message = f"REACHABLE {num_reachable} {' '.join(reachable_list)}\n"
@@ -218,7 +227,6 @@ def run():
                         y_pos = parts[4]
 
                         reachable = lists_reachable(x_pos,y_pos, range, base, sensor_id)
-
                         # for node_id, pos_info in base.items():
                         #     reachable_list.append(f"{node_id} {pos_info[0]} {pos_info[1]}")
 
@@ -249,7 +257,6 @@ def run():
                         # send to sensor
 
                         while 1:
-                            # print(next_sns, "next_sns", dest)
                             if next_sns not in base_stations:
                                 # print("here")
                                 next_sock = clients[next_sns]
@@ -266,11 +273,14 @@ def run():
                                 if next_sns == dest:
                                     print(next_sns+": Message from "+sensor_id+" to "+dest+" successfully received")
                                     break
+                                elif dest in base[next_sns][3]: # base stations can reach each other
+                                    hop.append(next_sns)
+                                    print(next_sns+": Message from "+ sensor_id+" to "+dest+" being forwarded through "+next_sns)
+                                    next_sns = dest
                                 elif check_lists(base[next_sns][3], hop):
                                     # print("no")
                                     print(next_sns+": Message from "+sensor_id+" to "+dest+" could not be delivered")
                                     break
-
                                 else:
                                     nxt = closest(base,next_sns, dest, hop, base_stations)
                                     # print(nxt, "nxt")
@@ -284,9 +294,11 @@ def run():
                                         print(next_sns + ": Message from " + sensor_id + " to " + dest + " being forwarded through " + next_sns)
                                         next_sock = clients[nxt]
                                         hop_str = ""
-                                        for i in hop:
-                                            hop_str = hop_str + ' ' + i
-                                        data_msg = "DATAMESSAGE " + sensor_id + " " + nxt + " " + dest+ " [ " + hop_str + "]"
+                                        space = "', '"
+                                        hop_str = space.join(hop)
+                                        #for i in hop:
+                                        #    hop_str = hop_str + ' ' + i
+                                        data_msg = "DATAMESSAGE " + sensor_id + " " + nxt + " " + dest+ " ['" + hop_str + "']"
                                         next_sock.send(data_msg.encode())
                                         break
                         client_socket.send("message sent".encode())
