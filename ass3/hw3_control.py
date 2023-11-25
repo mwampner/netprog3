@@ -78,6 +78,7 @@ def run():
     #       [2] - NUMLINKS
     #       [3:] - List of Links
     base = {}
+    base_stations = []
     for line in station_file:
         # print(line)
         count = 0
@@ -93,11 +94,12 @@ def run():
                 base[key].append(i.strip())
             count += 1
         base[key].append(lt)
+        base_stations.append(key)
 
     # print(base)
 
     station_file.close()
-    base_stations = base.keys()
+
 
     if not exists:
         print("Error, provided base station file " + sys.argv[2] + " does not exist\n")
@@ -229,22 +231,29 @@ def run():
                         print("Error handling UPDATEPOSITION command:", e)
                 elif command.startswith("DATAMESSAGE"):
                     try:
+                        hop = command[command.find('[') + 1: command.find(']')].split()
                         parts = command.split()
                         #  "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] + " 1 ['" + sensor_id + "']"
                         sensor_id = parts[1]
                         next_sns = parts[2]
                         dest = parts[3]
-                        hop = parts[5][2:-2].split()  # parse away the brackets
+
+
+                        # hop = parts[5][2:-2].split()  # parse away the brackets
                         # print(hop, "hop")
 
                         # send to sensor
 
                         while 1:
-                            # print(next_sns)
+
                             if next_sns not in base_stations:
                                 next_sock = clients[next_sns]
-                                data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + dest
+                                hop_str = ""
+                                for i in hop:
+                                    hop_str = hop_str + ' ' + i
+                                data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + dest + " [ " + hop_str + "]"
                                 next_sock.send(data_msg.encode())
+
                                 break
                             else:  # send to base_station
                                 # print(base[next_sns][3])
@@ -260,12 +269,17 @@ def run():
                                 else:
                                     nxt = closest(base,next_sns, dest, hop)
                                     if nxt in base_stations:
+                                        print(next_sns+": Message from "+ sensor_id+" to "+dest+" being forwarded through "+next_sns)
                                         hop.append(next_sns)
                                         next_sns = nxt
 
+
                                     else:
                                         next_sock = clients[nxt]
-                                        data_msg = "DATAMESSAGE " + sensor_id + " " + nxt + " " + dest
+                                        hop_str = ""
+                                        for i in hop:
+                                            hop_str = hop_str + ' ' + i
+                                        data_msg = "DATAMESSAGE " + sensor_id + " " + nxt + " " + dest+ " [ " + hop_str + "]"
                                         next_sock.send(data_msg.encode())
                                         break
                         client_socket.send("message sent".encode())

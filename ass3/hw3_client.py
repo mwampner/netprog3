@@ -149,10 +149,9 @@ if __name__ == "__main__":
         input_detect = select.select(msg_sources, [], [])
 
         for source in input_detect:
-
-            if source == s: # accept control message
-                #print(response)
+            if source[0] == s: # accept control message
                 response = s.recv(1024).decode()
+                hop = response[response.find('[') + 1: response.find(']')].split()
                 response = response.split()
                 # received data message
                 if response[0] == "DATAMESSAGE":
@@ -165,7 +164,7 @@ if __name__ == "__main__":
                         if response[3] == sensor_id:
                             print(sensor_id + ": Message from " + response[1] + " to " + sensor_id + " successfully received\n")
                         else: # pass on message to next id
-                            data_message_handling(response, x_position, y_position, response[5], s)
+                            data_message_handling(response, x_position, y_position, hop, s)
                 else: # received invalid message
                     print("Invalid message received from control: exiting...\n")
                     s.close()
@@ -224,7 +223,25 @@ if __name__ == "__main__":
                         print("Invalid WHERE commad arguments\n")
                     else: # valid command
                         res = send_where_message(msg[1], s)
-            # INVALID COMMAND
+                # elif(msg[0] == "DATAMESSAGE"):
+                #     # data_msg = "DATAMESSAGE " + sensor_id + " " + nxt + " " + dest
+                #     orgin_id = msg[1]
+                #     sensor_id = msg[2]
+                #     dest = msg[3]
+                #     hop = [] # change
+                #
+                #     if dest == sensor_id:
+                #         print(sensor_id+": Message from "+orgin_id+" to "+dest+" successfully received.")
+                #     else:
+                #         reachable_list = send_update_position_message(sensor_id, x_position, y_position, s, sensor_range)
+                #         next = find_next_loc(dest, reachable_list,hop, s)
+                #         if next == -1:
+                #             print(sensor_id+": Message from "+orgin_id+" to "+dest+" could not be delivered.")
+                #         else:
+                #             hop.append(sensor_id)
+                #             data_msg = "DATAMESSAGE " + orgin_id + " " + next + " " + dest+ " 1 ['" + sensor_id + "']"
+                #             print(sensor_id+": Message from "+orgin_id+" to "+dest+" being forwarded through "+sensor_id)
+                #             send_data_message(data_msg, s)
 
                 else:
                     print("Invalid Client command input\n")
