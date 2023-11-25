@@ -28,23 +28,25 @@ def lists_reachable(x, y, range, dic, id):
         print("Error in lists_reachable:", e)
 
 
-def closest(base, curr, dest, hops):
+def closest(base, curr, dest, hops, base_stations):
     # print("in closest")
     reachable = [0,float('inf')]
     x = base[dest][0]
     y = base[dest][1]
     # print(x,y)
     cansee = base[curr][3]
-
+    # print(cansee)
+    # print(hops)
+    # print(base.keys())
     for b, val in base.items():
-        if b in cansee:
+        if b in cansee or (curr in base_stations and b not in base_stations):
             # print(int(val[0]), int(val[1]))
             dist = 0
             try:
                 dist = math.dist([int(x), int(y)], [int(val[0]), int(val[1])])
             except Exception as e:
                 print("Error in dist:", e)
-            if b != dest and b not in hops:
+            if b not in hops:
                 if dist < reachable[1]:
                     reachable[0] = b
                     reachable[1] = dist
@@ -117,7 +119,7 @@ def run():
     control_socket.listen(5) # listen for clients
 
     # listen
-    print("listnening for connections")
+    # print("listnening for connections")
     inputs = [sys.stdin, control_socket]
     clients = {}
 
@@ -175,7 +177,7 @@ def run():
                     for node_id, pos_info in base.items():
                         if(math.dist([x_pos, y_pos], [int(pos_info[0]), int(pos_info[1])]) <= sns_range and node_id != sensor_id):
                             reachable_list.append(node_id)
-                    print("TEST")
+                    # print("TEST")
                     base[sensor_id].append(len(reachable_list))
                     for n in reachable_list:
                         base[sensor_id].append(n)
@@ -183,7 +185,7 @@ def run():
                     num_reachable = len(reachable_list)
                     reachable_message = f"REACHABLE {num_reachable} {' '.join(reachable_list)}\n"
 
-                    print(reachable_message)
+                    # print(reachable_message)
                     client_socket.send(reachable_message.encode())
 
                 except Exception as e:
@@ -202,7 +204,7 @@ def run():
                             there_message = f"THERE {node_id} {x_pos} {y_pos}\n"
 
                             client_socket.send(there_message.encode())
-                            print(there_message)
+                            # print(there_message)
                         else:
                             print("Node ID not found.")
                     except Exception as e:
@@ -226,12 +228,13 @@ def run():
 
                         reachable_message = f"REACHABLE {num_reachable} {' '.join(reachable)}\n"
 
-                        print(reachable_message)
+                        # print(reachable_message)
                         client_socket.send(reachable_message.encode())
                     except Exception as e:
                         print("Error handling UPDATEPOSITION command:", e)
                 elif command.startswith("DATAMESSAGE"):
                     try:
+                        # print(command)
                         hop = command[command.find('[') + 1: command.find(']')].split()
                         parts = command.split()
                         #  "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] + " 1 ['" + sensor_id + "']"
@@ -246,8 +249,9 @@ def run():
                         # send to sensor
 
                         while 1:
-
+                            # print(next_sns, "next_sns", dest)
                             if next_sns not in base_stations:
+                                # print("here")
                                 next_sock = clients[next_sns]
                                 hop_str = ""
                                 for i in hop:
@@ -268,7 +272,8 @@ def run():
                                     break
 
                                 else:
-                                    nxt = closest(base,next_sns, dest, hop)
+                                    nxt = closest(base,next_sns, dest, hop, base_stations)
+                                    # print(nxt, "nxt")
                                     if nxt in base_stations:
                                         print(next_sns+": Message from "+ sensor_id+" to "+dest+" being forwarded through "+next_sns)
                                         hop.append(next_sns)
@@ -276,6 +281,7 @@ def run():
 
 
                                     else:
+                                        print(next_sns + ": Message from " + sensor_id + " to " + dest + " being forwarded through " + next_sns)
                                         next_sock = clients[nxt]
                                         hop_str = ""
                                         for i in hop:

@@ -19,7 +19,7 @@ def send_where_message(sensor_id, s):
     response = send_message_to_control(message, s)
 
     # print THERE message
-    print(response)
+    # print(response)
 
     return response
 
@@ -28,7 +28,7 @@ def send_update_position_message(sensor_id, x_position, y_position, s, sns_range
     # Format the UPDATEPOSITION message for the control server
     message = f"UPDATEPOSITION {sensor_id} {sns_range} {x_position} {y_position}\n"
     response = send_message_to_control(message, s)
-    print(response)
+    # print(response)
     
     # print REACHABLE message
     res_str = sensor_id + ": After reading REACHABLE message, I can see: "
@@ -51,7 +51,7 @@ def send_update_position_message(sensor_id, x_position, y_position, s, sns_range
 def send_data_message(msg, s):
     # Format the DATA message for the control server
     response = send_message_to_control(msg, s)
-    print(response)
+    # print(response)
     return response
 
 def find_next_loc(dest, reachable, hop_list, s):
@@ -63,7 +63,7 @@ def find_next_loc(dest, reachable, hop_list, s):
     for s1 in reachable:
         # get dest for reachables
         loc = send_where_message(s1, s).split()
-        print(loc, dest_pos)
+        # print(loc, dest_pos)
         # get distance from dest
         dist = math.dist([int(loc[2]), int(loc[3])], [int(dest_pos[2]), int(dest_pos[3])])
         next_ops[s1] = dist
@@ -82,32 +82,39 @@ def find_next_loc(dest, reachable, hop_list, s):
     # impossible to send
     return -1
 
-def data_message_handling(res, x, y, s, sns_range):
+def data_message_handling(res,hop, x, y, s, sns_range):
     org_sns = res[1]
     dest = res[3]
     sns = res[2]
     # iterate hop data
-    hop_num = res[4] + 1
-    hop_list = res[5]
+    hop_num = len(hop)
+    hop_list = hop
     hop_list.append(sns)
     # get reachable list for sensor
     reachable = send_update_position_message(sensor_id, x, y, s, sns_range)
     next_sns = ""
     # search for dest
-    for s in reachable:
-        if s == dest:
+    for s2 in reachable:
+        if s2 == dest:
             next = dest
-    if next == dest:
+    if next_sns == dest:
         # build data message
-        data_msg = "DATAMESSAGE " + org_sns + " " + next_sns + " " + dest + " " + hop_num + " " + hop_list
+        hop_str = ""
+        for i in hop_list:
+            hop_str = hop_str + ' ' + i
+        data_msg = "DATAMESSAGE " + org_sns + " " + next_sns + " " + dest +  " [ " + hop_str + " ]"
         send_data_message(data_msg, s)
     else:
-        next_sns = find_next_loc(dest, reachable, hop_list)
+        next_sns = find_next_loc(dest, reachable, hop_list, s)
         if next_sns == -1:
             print(sns + ": Message from " + org_sns + " to " + dest + " could not be delivered")
             return -1
         else: # possible to send message
-            data_msg = "DATAMESSAGE " + org_sns + " " + next_sns + " " + dest + " " + hop_num + " " + hop_list
+            hop_str = ""
+            for i in hop_list:
+                hop_str = hop_str + ' ' + i
+            print(sns + ": Message from " + org_sns + " to "+dest+" being forwarded through "+ sns)
+            data_msg = "DATAMESSAGE " + org_sns + " " + next_sns + " " + dest + " " + " [ " + hop_str + " ]"
             send_data_message(data_msg, s)
         
 if __name__ == "__main__":
@@ -165,7 +172,7 @@ if __name__ == "__main__":
                             if response[3] == sensor_id:
                                 print(sensor_id + ": Message from " + response[1] + " to " + sensor_id + " successfully received\n")
                             else: # pass on message to next id
-                                data_message_handling(response, x_position, y_position, hop, s)
+                                data_message_handling(response, hop,  x_position, y_position, s, sensor_range)
                     else: # received invalid message
                         print("Invalid message received from control: exiting...\n")
                         s.close()
@@ -210,13 +217,14 @@ if __name__ == "__main__":
                             if next_sns == s:
                                 print(sensor_id + ": Sent a new message bound for " + msg[1])
                                 # build data message
-                                data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1]
+                                data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] + "[ ]"
                                 send_data_message(data_msg, s)
                             else:
                                 # find where to send msg
+                                print(sensor_id + ": Sent a new message bound for " + msg[1])
                                 next_sns = find_next_loc(msg[1], response, [], s)
                                 # send data message to control
-                                data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] + " 1 ['" + sensor_id + "']"
+                                data_msg = "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] + " ['" + sensor_id + "']"
                                 send_data_message(data_msg, s)
                 # WHERE
                     elif(msg[0] == "WHERE"):
