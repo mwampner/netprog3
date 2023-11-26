@@ -155,10 +155,10 @@ if __name__ == "__main__":
     #print("Response from control server:", response)
 
     # Additional sensor logic...()
-
+    # Set up select
+    msg_sources = [s, sys.stdin]
     while 1:
-        # Set up select
-        msg_sources = [s, sys.stdin]
+        
         # start select
         input_detect = select.select(msg_sources, [], [])
 
@@ -169,7 +169,11 @@ if __name__ == "__main__":
                     hop = response[response.find('[') + 1: response.find(']')].split()
                     response = response.split()
                     # received data message
-                    if response[0] == "DATAMESSAGE":
+                    if response == []:
+                        s.shutdown(socket.SHUT_RDWR)
+                        s.close()
+                        msg_sources.remove(s)
+                    elif response[0] == "DATAMESSAGE":
                         if(len(response) != 6):
                             print("Invalid DATAMESSAGE received exiting...")
                             s.close()
@@ -195,8 +199,10 @@ if __name__ == "__main__":
                 # QUIT
                     if(msg[0] == "QUIT"):
                         # inform client of disconnect
-                        s.shutdown(socket.SHUT_RDWR)
-                        s.close()
+                        if s in msg_sources:
+                            #print("!!!!")
+                            s.shutdown(socket.SHUT_RDWR)
+                            s.close()
                         exit()
                 # MOVE
                     elif(msg[0] == "MOVE"):

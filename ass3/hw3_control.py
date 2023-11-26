@@ -77,8 +77,7 @@ def run():
         print("Error, correct usage is {} [control port] [base station file]".format(sys.argv[0]))
         sys.exit(-1)
         
-    for s in sys.argv:
-        print(s)
+
     # Read base station file
     station_file = open(sys.argv[2], "r")
     if station_file == FileNotFoundError:
@@ -129,7 +128,6 @@ def run():
         control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         control_socket.bind(('localhost', local_id)) # bind socket to port
         control_socket.listen(5) # listen for clients
-        print("LISTENING!!!")
     except Exception as e:
         print("Error:", e)
 
@@ -250,10 +248,8 @@ def run():
                         print("Error handling UPDATEPOSITION command:", e)
                 elif command.startswith("DATAMESSAGE"):
                     try:
-                        print(command)
                         hop = command[command.find('[') + 1: command.find(']')].split()
                         parts = command.split()
-                        print(parts)
                         #  "DATAMESSAGE " + sensor_id + " " + next_sns + " " + msg[1] + " 1 ['" + sensor_id + "']"
                         sensor_id = parts[1]
                         next_sns = parts[2]
@@ -319,7 +315,6 @@ def run():
                 elif command == "": # Client disconnect
                     for c in clients:
                         if clients[c] == client_socket:
-                            print("DISCONNECT " + c)
                             base.pop(c)
                             inputs.remove(client_socket)
 
